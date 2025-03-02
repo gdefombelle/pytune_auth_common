@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "pytune_auth_common"
+version = "0.2.5"
+description = "Module commun pour la gestion d'authentification et de ratelimit dans PyTune"
+authors = ["gabriel de fombelle <gabriel.de.fombelle@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12.3"
+fastapi = "*"
+python-jose = "*"
+redis = "*"
+pydantic = "*"
+cryptography = "*"
+python-dotenv = "*"
+starlette = "*"
+tortoise-orm = "*"
+typing = "*"
+aiohttp = "*"
+colorama = "*"
+
+# Dépendances internes
+pytune_data = { path = "../pytune_data" }
+pytune_helpers = { path = "../pytune_helpers" }
+simple_logger = { path = "../simple_logger" }
+pytune_configuration = { path = "../pytune_configuration" }
+passlib = "^1.7.4"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.0"
+black = "^23.0"
+mypy = "^1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
