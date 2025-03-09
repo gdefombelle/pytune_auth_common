@@ -21,10 +21,10 @@ aiohttp = "*"
 colorama = "*"
 
 # Dépendances internes
-pytune_data = { path = "../pytune_data" }
-pytune_helpers = { path = "../pytune_helpers" }
-simple_logger = { path = "../simple_logger" }
-pytune_configuration = { path = "../pytune_configuration" }
+pytune_data = { git = "https://github.com/gdefombelle/pytune_data.git" }
+pytune_helpers = { git = "https://github.com/gdefombelle/pytune_helpers.git" }
+simple_logger = { git = "https://github.com/gdefombelle/simple_logger.git" }
+pytune_configuration = { git = "https://github.com/gdefombelle/pytune_configuration.git" }
 passlib = "^1.7.4"
 
 [tool.poetry.dev-dependencies]
