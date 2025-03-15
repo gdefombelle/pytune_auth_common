@@ -16,6 +16,8 @@ cryptography = "*"
 python-dotenv = "*"
 starlette = "*"
 tortoise-orm = "*"
+requests = "*"
+
 typing = "*"
 aiohttp = "*"
 colorama = "*"
