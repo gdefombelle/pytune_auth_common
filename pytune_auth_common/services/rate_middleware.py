@@ -59,7 +59,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if self.is_local_ip(client_ip):
             return await call_next(request)
 
-
         #redis_client = await get_redis_client() --> obtain redis_client
         is_blocked = await self.redis_client.get(f"blocked_{client_ip}")
         if is_blocked:
