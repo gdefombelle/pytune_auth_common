@@ -59,15 +59,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if self.is_local_ip(client_ip):
             return await call_next(request)
 
-        current_user = await get_current_user(request.cookies.get("access_token"))
-        if current_user and current_user.user_type == UserTypeEnum.ADMIN:
-            return await call_next(request)
-
 
         #redis_client = await get_redis_client() --> obtain redis_client
         is_blocked = await self.redis_client.get(f"blocked_{client_ip}")
         if is_blocked:
-            await logger.awarning(f"blocked user {current_user.email} still trying to make new requests")
+            await logger.awarning(f"blocked user - ip: {client_ip} still trying to make new requests")
             return Response("Too many requests, you are temporarily blocked.", status_code=429)
 
         async with self.config._lock:
@@ -77,7 +73,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             if requests > self.config.rate_limit:
                 await self.redis_client.set(f"blocked_{client_ip}", "1", ex=self.config.block_time)
-                await logger.awarning(f"user {current_user.email} has been blocked (too many requests)")
+                await logger.awarning(f"user ip: {client_ip} has been blocked (too many requests)")
                 return Response("Too many requests, you are temporarily blocked.", status_code=429)
 
         response = await call_next(request)
