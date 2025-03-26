@@ -12,6 +12,9 @@ from pytune_data.crud import get_user_by_email
 from pytune_data.db import init as init_db
 from pytune_auth_common.services.key_management_service import key_service
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
+from simple_logger.logger import SimpleLogger, get_logger
+
+logger : SimpleLogger = get_logger()
 
 if config is None:
     config = SimpleConfig()
@@ -150,13 +153,19 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
 
     secure_cookie = request.url.scheme == "https"
     samesite_policy = "None" if domain else "Lax"
-    
-    # Forces the token_service to include bearer tokens in the response even for web clients. 
-    # This is particularly usefulin development environments to address cross-domain compatibility 
-    # issues when using HTTP instead of HTTPS.
     force_bearer = config.INCLUDE_BEARER_TOKENS_FOR_WEB
-    # Store tokens in cookies if it's a web platform
+
+    logger.info("Setting tokens for platform='%s'", platform)
+    logger.info("→ is_local: %s", is_local)
+    logger.info("→ scheme: %s", request.url.scheme)
+    logger.info("→ domain: %s", domain)
+    logger.info("→ secure_cookie: %s", secure_cookie)
+    logger.info("→ samesite_policy: %s", samesite_policy)
+    logger.info("→ force_bearer: %s", force_bearer)
+    logger.info("→ both_tokens: %s", both_tokens)
+
     if platform == "web":
+        logger.info("Setting access_token as cookie")
         response.set_cookie(
             key="access_token",
             value=access_token,
@@ -167,6 +176,7 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
             samesite=samesite_policy,
         )
         if both_tokens:
+            logger.info("Setting refresh_token as cookie")
             response.set_cookie(
                 key="refresh_token",
                 value=refresh_token,
@@ -177,15 +187,16 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
                 samesite=samesite_policy,
             )
         response.headers["Access-Control-Allow-Credentials"] = "true"
+        logger.info("Access-Control-Allow-Credentials header set to true")
 
-    # Always return Bearer tokens if force_bearer is True or for API clients
     if force_bearer or platform != "web":
+        logger.info("Returning bearer tokens in headers")
         response.headers["Authorization"] = f"Bearer {access_token}"
         if refresh_token:
             response.headers["X-Refresh-Token"] = refresh_token
 
+    logger.success("Tokens successfully processed")
     return {"message": "Tokens processed successfully"}
-
 
 def raise_revoked_user_error(username: str):
     raise HTTPException(
