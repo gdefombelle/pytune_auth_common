@@ -127,45 +127,22 @@ def get_root_domain(hostname: str) -> str:
         return f".{parts[-2]}.{parts[-1]}"
     return hostname  # Si c'est déjà un domaine de niveau supérieur, on le retourne tel quel
 
-def delete_tokens_from_response(response: Response, request: Request):
-    # Déterminer le domaine principal si nécessaire
-    # Si lors de la création du cookie, aucun domaine n'a été spécifié, laissez 'domain=None'.
-    domain = None
-    if request.url.hostname not in ["127.0.0.1", "localhost"] and not request.url.hostname.startswith("192.168."):
-        domain = request.url.hostname
-
-    # Suppression des cookies sans préciser le domaine
-    response.delete_cookie(key="access_token", path="/")
-    response.delete_cookie(key="refresh_token", path="/")
-
-    # Si un domaine avait été spécifié lors de la création
-    if domain:
-        response.delete_cookie(key="access_token", path="/", domain=domain)
-        response.delete_cookie(key="refresh_token", path="/", domain=domain)
-
-    return {"message": "Cookies have been removed"}
-
 def respond_with_tokens(response: Response, request: Request, platform: str, access_token: str, 
                         refresh_token: Optional[str] = None):
     both_tokens: bool = bool(refresh_token)
     is_local = request.url.hostname in ["127.0.0.1", "localhost"] or request.url.hostname.startswith("192.168.")
     domain = None if is_local else get_root_domain(request.url.hostname)
-
     secure_cookie = request.url.scheme == "https"
     samesite_policy = "None" if domain else "Lax"
     force_bearer = config.INCLUDE_BEARER_TOKENS_FOR_WEB
 
-    logger.info("Setting tokens for platform='%s'", platform)
-    logger.info("→ is_local: %s", is_local)
-    logger.info("→ scheme: %s", request.url.scheme)
-    logger.info("→ domain: %s", domain)
-    logger.info("→ secure_cookie: %s", secure_cookie)
-    logger.info("→ samesite_policy: %s", samesite_policy)
-    logger.info("→ force_bearer: %s", force_bearer)
-    logger.info("→ both_tokens: %s", both_tokens)
+    print(f"\n[respond_with_tokens] platform={platform} | is_local={is_local}")
+    print(f" → scheme={request.url.scheme} | domain={domain}")
+    print(f" → secure_cookie={secure_cookie} | samesite={samesite_policy}")
+    print(f" → force_bearer={force_bearer} | both_tokens={both_tokens}")
 
     if platform == "web":
-        logger.info("Setting access_token as cookie")
+        print(" → Setting access_token in cookie")
         response.set_cookie(
             key="access_token",
             value=access_token,
@@ -176,7 +153,7 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
             samesite=samesite_policy,
         )
         if both_tokens:
-            logger.info("Setting refresh_token as cookie")
+            print(" → Setting refresh_token in cookie")
             response.set_cookie(
                 key="refresh_token",
                 value=refresh_token,
@@ -187,15 +164,15 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
                 samesite=samesite_policy,
             )
         response.headers["Access-Control-Allow-Credentials"] = "true"
-        logger.info("Access-Control-Allow-Credentials header set to true")
+        print(" → Access-Control-Allow-Credentials set to true")
 
     if force_bearer or platform != "web":
-        logger.info("Returning bearer tokens in headers")
+        print(" → Returning bearer tokens in headers")
         response.headers["Authorization"] = f"Bearer {access_token}"
         if refresh_token:
             response.headers["X-Refresh-Token"] = refresh_token
 
-    logger.success("Tokens successfully processed")
+    print(" ✅ Tokens processed successfully\n")
     return {"message": "Tokens processed successfully"}
 
 def raise_revoked_user_error(username: str):
