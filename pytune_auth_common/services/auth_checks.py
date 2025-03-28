@@ -210,6 +210,8 @@ async def get_current_user(
     Authenticate and retrieve the current user using access and refresh tokens.
     Handles token validation, rotation, user activity, and token expiration.
     """
+
+    print("***********ENTERING GET_CURRENT_USER *************")
     # Step 0 : Debug hhtponly cookie en prod
     # Diagnostic complet pour debug cookies + headers
     logger.info(f"[get_current_user] Host={request.headers.get('host')} | Origin={request.headers.get('origin')}")
