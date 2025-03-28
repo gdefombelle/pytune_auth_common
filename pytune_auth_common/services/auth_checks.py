@@ -23,7 +23,7 @@ if config is None:
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-logger :SimpleLogger = get_logger()
+logger :SimpleLogger = get_logger("auth_common", log_file="pytune_oauth") 
 
 # --- Helper Functions --- #
 

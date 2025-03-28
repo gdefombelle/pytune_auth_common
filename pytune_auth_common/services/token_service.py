@@ -127,6 +127,9 @@ def get_root_domain(hostname: str) -> str:
         return f".{parts[-2]}.{parts[-1]}"
     return hostname  # Si c'est déjà un domaine de niveau supérieur, on le retourne tel quel
 
+
+from simple_logger.logger import get_logger
+logger = get_logger("token_service")  # ou un autre nom unique
 def respond_with_tokens(response: Response, request: Request, platform: str, access_token: str, 
                         refresh_token: Optional[str] = None):
     both_tokens: bool = bool(refresh_token)
@@ -140,7 +143,10 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
     f"scheme={request.url.scheme} | domain={domain} | secure_cookie={secure_cookie} | "
     f"samesite={samesite_policy} | force_bearer={force_bearer} | both_tokens={both_tokens}"
     )
-
+    logger.info(
+    "[respond_with_tokens] platform=%s | is_local=%s | domain=%s | secure=%s | samesite=%s | force_bearer=%s",
+    platform, is_local, domain, secure_cookie, samesite_policy, force_bearer
+    )
 
     if platform == "web":
         print(" → Setting access_token in cookie")
