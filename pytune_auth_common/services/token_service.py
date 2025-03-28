@@ -128,11 +128,14 @@ def get_root_domain(hostname: str) -> str:
     return hostname  # Si c'est déjà un domaine de niveau supérieur, on le retourne tel quel
 
 
-from simple_logger.logger import get_logger
-logger = get_logger("token_service", "token_service")
+
 
 def respond_with_tokens(response: Response, request: Request, platform: str, access_token: str, 
                         refresh_token: Optional[str] = None):
+    from simple_logger.logger import get_logger
+
+    logger = get_logger("default")  # 👈 on force l'usage du logger "default"
+    
     both_tokens: bool = bool(refresh_token)
     is_local = request.url.hostname in ["127.0.0.1", "localhost"] or request.url.hostname.startswith("192.168.")
     domain = None if is_local else get_root_domain(request.url.hostname)
