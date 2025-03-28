@@ -129,7 +129,8 @@ def get_root_domain(hostname: str) -> str:
 
 
 from simple_logger.logger import get_logger
-logger = get_logger("token_service")  # ou un autre nom unique
+logger = get_logger("token_service", "token_service")
+
 def respond_with_tokens(response: Response, request: Request, platform: str, access_token: str, 
                         refresh_token: Optional[str] = None):
     both_tokens: bool = bool(refresh_token)
