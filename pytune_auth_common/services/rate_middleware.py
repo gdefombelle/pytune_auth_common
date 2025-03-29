@@ -15,7 +15,7 @@ from pytune_configuration.sync_config_singleton import config as _config, Simple
 
 _config = _config or SimpleConfig()
 
-logger : SimpleLogger = get_logger()
+logger = get_logger("pytune_oauth")
 
 class RateLimitConfig:
     def __init__(self, rate_limit: int, time_window: int, block_time: int):

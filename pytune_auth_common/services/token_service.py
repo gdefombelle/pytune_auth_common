@@ -14,7 +14,7 @@ from pytune_auth_common.services.key_management_service import key_service
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
 from simple_logger.logger import SimpleLogger, get_logger
 
-logger : SimpleLogger = get_logger()
+logger = get_logger("pytune_oauth")
 
 if config is None:
     config = SimpleConfig()
@@ -132,10 +132,8 @@ def get_root_domain(hostname: str) -> str:
 
 def respond_with_tokens(response: Response, request: Request, platform: str, access_token: str, 
                         refresh_token: Optional[str] = None):
-    from simple_logger.logger import get_logger
-
-    logger = get_logger("default")  # 👈 on force l'usage du logger "default"
-    
+  
+   
     both_tokens: bool = bool(refresh_token)
     is_local = request.url.hostname in ["127.0.0.1", "localhost"] or request.url.hostname.startswith("192.168.")
     domain = None if is_local else get_root_domain(request.url.hostname)
