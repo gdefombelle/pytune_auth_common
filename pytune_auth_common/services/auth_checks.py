@@ -23,7 +23,7 @@ if config is None:
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-logger :SimpleLogger = get_logger("pytune_auth") 
+logger :SimpleLogger = get_logger("auth_common") 
 logger.info("🎉 Logger pytune_auth_ok initialisé: pytune_auth_common")
 # --- Helper Functions --- #
 

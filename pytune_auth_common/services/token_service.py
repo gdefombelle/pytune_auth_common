@@ -14,7 +14,7 @@ from pytune_auth_common.services.key_management_service import key_service
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
 from simple_logger.logger import SimpleLogger, get_logger
 
-logger = get_logger("pytune_oauth")
+logger = get_logger("auth_common")
 
 if config is None:
     config = SimpleConfig()
