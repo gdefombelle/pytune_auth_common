@@ -127,8 +127,23 @@ def get_root_domain(hostname: str) -> str:
         return f".{parts[-2]}.{parts[-1]}"
     return hostname  # Si c'est déjà un domaine de niveau supérieur, on le retourne tel quel
 
+def delete_tokens_from_response(response: Response, request: Request):
+    # Déterminer le domaine principal si nécessaire
+    # Si lors de la création du cookie, aucun domaine n'a été spécifié, laissez 'domain=None'.
+    domain = None
+    if request.url.hostname not in ["127.0.0.1", "localhost"] and not request.url.hostname.startswith("192.168."):
+        domain = request.url.hostname
 
+    # Suppression des cookies sans préciser le domaine
+    response.delete_cookie(key="access_token", path="/")
+    response.delete_cookie(key="refresh_token", path="/")
 
+    # Si un domaine avait été spécifié lors de la création
+    if domain:
+        response.delete_cookie(key="access_token", path="/", domain=domain)
+        response.delete_cookie(key="refresh_token", path="/", domain=domain)
+
+    return {"message": "Cookies have been removed"}
 
 def respond_with_tokens(response: Response, request: Request, platform: str, access_token: str, 
                         refresh_token: Optional[str] = None):
