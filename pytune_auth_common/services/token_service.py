@@ -156,19 +156,12 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
     samesite_policy = "None" if domain else "Lax"
     force_bearer = config.INCLUDE_BEARER_TOKENS_FOR_WEB
     logger.info(
-    "token_service.respond_with_tokens",
-        (
-            f"platform={platform} | is_local={is_local} | "
-            f"scheme={request.url.scheme} | domain={domain} | "
-            f"secure_cookie={secure_cookie} | samesite={samesite_policy} | "
-            f"force_bearer={force_bearer} | both_tokens={both_tokens}"
-        )
-    )
-    logger.info(
         "token_service.respond_with_tokens",
-        f"platform={platform} | is_local={is_local} | domain={domain} | "
-        f"secure={secure_cookie} | samesite={samesite_policy} | force_bearer={force_bearer}"
+        f"platform={platform} | is_local={is_local} | scheme={request.url.scheme} | "
+        f"domain={domain} | secure_cookie={secure_cookie} | samesite={samesite_policy} | "
+        f"force_bearer={force_bearer} | both_tokens={both_tokens}"
     )
+
 
     if platform == "web":
         print(" → Setting access_token in cookie")
