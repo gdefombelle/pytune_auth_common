@@ -156,7 +156,7 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
     samesite_policy = "None" if domain else "Lax"
     force_bearer = config.INCLUDE_BEARER_TOKENS_FOR_WEB
     logger.info(
-        "token_service.respond_with_tokens",
+        "token_service.respond_with_tokens | "
         f"platform={platform} | is_local={is_local} | scheme={request.url.scheme} | "
         f"domain={domain} | secure_cookie={secure_cookie} | samesite={samesite_policy} | "
         f"force_bearer={force_bearer} | both_tokens={both_tokens}"
