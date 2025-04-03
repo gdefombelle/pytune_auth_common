@@ -152,7 +152,7 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
     both_tokens: bool = bool(refresh_token)
     is_local = request.url.hostname in ["127.0.0.1", "localhost"] or request.url.hostname.startswith("192.168.")
     domain = None if is_local else get_root_domain(request.url.hostname)
-    secure_cookie = request.url.scheme == "https"
+    secure_cookie = request.url.scheme == "https" or config.FORCE_SECURE_COOKIE
     samesite_policy = "None" if domain else "Lax"
     force_bearer = config.INCLUDE_BEARER_TOKENS_FOR_WEB
     logger.info(
