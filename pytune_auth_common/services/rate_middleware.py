@@ -10,7 +10,6 @@ from pytune_auth_common.services.auth_checks import get_current_user
 from pytune_data.models import UserTypeEnum
 from pytune_configuration.redis_config import get_redis_client, redis_client
 from simple_logger.logger import get_logger, SimpleLogger
-from pytune_configuration.config_service import config_global, get_config
 from pytune_configuration.sync_config_singleton import config as _config, SimpleConfig
 
 _config = _config or SimpleConfig()
