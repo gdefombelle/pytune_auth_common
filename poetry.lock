@@ -1850,7 +1850,7 @@ toml = "^0.10.2"
 type = "git"
 url = "https://github.com/gdefombelle/pytune_configuration.git"
 reference = "HEAD"
-resolved_reference = "4a718a96a7b96ac22d0b70db497ddac57c1850a2"
+resolved_reference = "7392771e9d6d2f850bf9d6be3c1af7385bb6413b"
 
 [[package]]
 name = "pytune-data"
@@ -1878,7 +1878,7 @@ unidecode = "^1.3.8"
 type = "git"
 url = "https://github.com/gdefombelle/pytune_data.git"
 reference = "HEAD"
-resolved_reference = "825d98493fd9c2209a040e46c68281124126c298"
+resolved_reference = "8a6bca526a36c820a0bbb97fc2f9c5068d8a3f41"
 
 [[package]]
 name = "pytune-helpers"
@@ -1900,7 +1900,7 @@ simple_logger = {git = "https://github.com/gdefombelle/simple_logger.git"}
 type = "git"
 url = "https://github.com/gdefombelle/pytune_helpers.git"
 reference = "HEAD"
-resolved_reference = "de1e2e428b93cd7bfa5cd87ca21049381d7f8a07"
+resolved_reference = "056e5baa24f9d8e7a1cc428324704d627004947b"
 
 [[package]]
 name = "pytz"
