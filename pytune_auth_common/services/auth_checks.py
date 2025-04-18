@@ -9,7 +9,6 @@ from pytune_data.crud import get_user_by_id
 from pytune_data.db import init as init_db
 from pytune_data.models import UserTypeEnum, UserStatusEnum , ClientStatusEnum 
 from pytune_auth_common.models.schema import UserOut
-from pytune_auth_common.services.key_management_service import key_service
 from pytune_auth_common.services.real_time_on_line_users import add_user_online, get_last_activity, update_last_activity
 from pytune_auth_common.services.token_service import (generate_token, get_user_from_db_or_token, is_token_revoked, raise_revoked_user_error,
                                                        raise_email_not_confirmed,respond_with_tokens, token_user_data, remove_user_token, delete_tokens_from_response)
