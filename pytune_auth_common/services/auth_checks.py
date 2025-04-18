@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, Request, Response, status
 from jose import jwt, ExpiredSignatureError, JWTError
 from passlib.context import CryptContext
 import asyncio
+from pytune_auth_common.services.key_management_service import KeyManagementService
 from pytune_data.crud import get_user_by_id
 from pytune_data.db import init as init_db
 from pytune_data.models import UserTypeEnum, UserStatusEnum , ClientStatusEnum 
@@ -19,6 +20,8 @@ from pytune_configuration.sync_config_singleton import config, SimpleConfig
 
 if config is None:
     config = SimpleConfig()
+
+key_service = KeyManagementService()
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

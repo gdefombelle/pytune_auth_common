@@ -10,7 +10,7 @@ from pytune_auth_common.models.schema import UserOut
 from pytune_data.models import User
 from pytune_data.crud import get_user_by_email
 from pytune_data.db import init as init_db
-from pytune_auth_common.services.key_management_service import key_service
+from pytune_auth_common.services.key_management_service import KeyManagementService
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
 from simple_logger.logger import SimpleLogger, get_logger
 
@@ -18,7 +18,7 @@ logger = get_logger("auth_common")
 
 if config is None:
     config = SimpleConfig()
-
+key_service = KeyManagementService()
 def token_user_data(user: UserOut):
     return {
         "sub": user.email,

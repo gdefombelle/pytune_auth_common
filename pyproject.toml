@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pytune_auth_common"
-version = "1.2.6"
+version = "1.2.7"
 description = "Module commun pour la gestion d'authentification et de ratelimit dans PyTune"
 authors = ["gabriel de fombelle <gabriel.de.fombelle@gmail.com>"]
 license = "MIT"
