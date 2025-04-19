@@ -10,6 +10,7 @@ from pytune_configuration.sync_config_singleton import config, SimpleConfig
 from pytune_configuration.root_config import root_config
 from simple_logger.logger import get_logger
 
+# S'assurer que la config est chargée
 if config is None:
     config = SimpleConfig()
 
@@ -24,10 +25,8 @@ class KeyManagementService:
             with cls._lock:
                 if cls._instance is None:
                     cls._instance = super().__new__(cls)
+                    cls._instance._load_keys()  # 💥 charge les clés directement lors de la 1ère création
         return cls._instance
-
-    def initialize(self):
-        self._load_keys()
 
     def _connect(self):
         return psycopg2.connect(
@@ -62,9 +61,9 @@ class KeyManagementService:
                     self.PUBLIC_ACCESS_KEY_OLD = old_access[0]
                     self.PUBLIC_REFRESH_KEY_OLD = old_refresh[0]
 
-            logger.info("RSA keys successfully loaded from database.")
+            logger.info("✅ RSA keys successfully loaded from database.")
         except Exception as e:
-            logger.critical(f"Failed to load RSA keys: {e}")
+            logger.critical(f"❌ Failed to load RSA keys: {e}")
             raise RuntimeError("Could not initialize RSA keys.")
 
     def _generate_passphrase(self, length=32) -> str:
@@ -85,7 +84,7 @@ class KeyManagementService:
             private_key_pem = self.PRIVATE_REFRESH_KEY
             passphrase = self.PASS_PHRASE_REFRESH_KEY
         else:
-            raise ValueError("Invalid key type")
+            raise ValueError(f"Invalid key type: {key_type}")
 
         private_key = self._decrypt_private_key(private_key_pem, passphrase)
         pem_key = private_key.private_bytes(
@@ -95,11 +94,6 @@ class KeyManagementService:
         )
         return jwt.encode(payload, pem_key, algorithm=config.ALGORITHM)
 
-    # 🔒 Rotation des clés : désactivée pour simplification (à réimplémenter plus tard proprement)
-    #
+    # 🔒 Rotation de clés désactivée pour l’instant
     # def rotate_keys(self): ...
-    # def _generate_key_pair(self): ...
     # async def notify_key_rotation(...) ...
-    # async def _get_key(...) ...
-    # async def _delete_key(...) ...
-    # connected_clients = {}
