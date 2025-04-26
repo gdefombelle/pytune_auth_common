@@ -5,8 +5,11 @@ from typing import Dict, Optional
 from redis import RedisError
 from pytune_configuration.redis_config import get_redis_client
 from pytune_auth_common.utils.user_agent import platforms
-from pytune_auth_common.models.schema import User
+from pytune_data.crud import update_user_last_connection
+from pytune_data.models import User
+from pytune_data.db import init as db_init
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
+
 
 if config is None:
     config = SimpleConfig()
@@ -151,3 +154,6 @@ async def get_last_activity(user_id: int) -> Optional[datetime]:
     if last_activity:
         return datetime.fromtimestamp(float(last_activity))
     return None
+
+async def update_last_connection(user_id):
+    await update_user_last_connection(user_id)

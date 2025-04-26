@@ -6,6 +6,7 @@ from jose import jwt, ExpiredSignatureError, JWTError
 from passlib.context import CryptContext
 import asyncio
 from pytune_auth_common.services.key_management_service import KeyManagementService
+from packages.pytune_auth_common.pytune_auth_common.services.real_time_on_line_users import update_last_connection
 from pytune_data.crud import get_user_by_id
 from pytune_data.db import init as init_db
 from pytune_data.models import UserTypeEnum, UserStatusEnum , ClientStatusEnum 
@@ -37,7 +38,6 @@ def validate_token(token: str, key: str, token_type: str) -> dict:
         return jwt.decode(token, key, algorithms=[config.ALGORITHM])
     except JWTError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid {token_type} token: {str(e)}")
-
 
 async def handle_user_validation(payload: dict, response: Response, request: Request) -> UserOut:
     """
@@ -106,6 +106,8 @@ async def handle_expired_access_token(refresh_token: str, response: Response, re
 
         await add_user_online(user.id, platform)
         await update_last_activity(user.id)
+        await update_last_connection(user.id)
+
 
         return user
 
@@ -186,6 +188,7 @@ async def handle_inactive_user(refresh_token: str, response: Response, request: 
 
         await add_user_online(user.id, platform)
         await update_last_activity(user.id)
+        await update_last_connection(user.id)
 
         return user
 
