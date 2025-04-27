@@ -1,3 +1,4 @@
+import asyncio
 from pytune_configuration.redis_config import get_redis_client
 from simple_logger.logger import get_logger
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
@@ -27,3 +28,11 @@ async def is_login_blocked(email: str) -> bool:
     if count is None:
         return False
     return int(count) >= config.FAILED_LOGIN_ATTEMPT_LIMIT
+
+async def apply_login_delay(email: str):
+    redis = get_redis_client()
+    key = f"{config.FAILED_LOGIN_KEY_PREFIX}:{email.lower()}"
+    count = await redis.get(key)
+    if count:
+        delay = min(int(count) * 0.5, 5)  # 0.5s de retard par tentative, max 5s
+        await asyncio.sleep(delay)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pytune_auth_common"
-version = "1.3.0"
+version = "1.3.1"
 description = "Module commun pour la gestion d'authentification et de ratelimit dans PyTune"
 authors = ["gabriel de fombelle <gabriel.de.fombelle@gmail.com>"]
 license = "MIT"
@@ -25,13 +25,15 @@ colorama = "*"
 # Dépendances internes
 # --- DEV mode (local) ---
 pytune_data = { path = "../../packages/pytune_data" }
+simple_logger = { path = "../../packages/simple_logger" }
+pytune_configuration = { path = "../../packages/pytune_configuration"}
+pytune_helpers = { path ="../../packages/pytune_helpers"}
 
-# --- PROD mode (git) ---
+# PROD mode:
+# simple_logger = { git = "https://github.com/gdefombelle/simple_logger.git" }
+# pytune_helpers = { git = "https://github.com/gdefombelle/pytune_helpers.git" }
+# pytune_configuration = { git = "https://github.com/gdefombelle/pytune_configuration"}
 # pytune_data = { git = "https://github.com/gdefombelle/pytune_data.git" }
-
-# DEV & PROD modes:
-simple_logger = { git = "https://github.com/gdefombelle/simple_logger.git" }
-pytune_helpers = { git = "https://github.com/gdefombelle/pytune_helpers.git" }
 
 passlib = "^1.7.4"
 
