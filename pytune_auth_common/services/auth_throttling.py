@@ -7,7 +7,7 @@ logger = get_logger("auth_throttling")
 config = config or SimpleConfig()
 
 async def register_failed_login(email: str) -> int:
-    redis = get_redis_client()
+    redis = await get_redis_client()
     key = f"{config.FAILED_LOGIN_KEY_PREFIX}:{email.lower()}"
     count = await redis.incr(key)
     if count == 1:
@@ -16,13 +16,13 @@ async def register_failed_login(email: str) -> int:
     return count
 
 async def reset_failed_logins(email: str):
-    redis = get_redis_client()
+    redis = await get_redis_client()
     key = f"{config.FAILED_LOGIN_KEY_PREFIX}:{email.lower()}"
     await redis.delete(key)
     await logger.ainfo(f"Reset failed login attempts for {email}")
 
 async def is_login_blocked(email: str) -> bool:
-    redis = get_redis_client()
+    redis = await get_redis_client()
     key = f"{config.FAILED_LOGIN_KEY_PREFIX}:{email.lower()}"
     count = await redis.get(key)
     if count is None:
@@ -30,7 +30,7 @@ async def is_login_blocked(email: str) -> bool:
     return int(count) >= config.FAILED_LOGIN_ATTEMPT_LIMIT
 
 async def apply_login_delay(email: str):
-    redis = get_redis_client()
+    redis = await get_redis_client()
     key = f"{config.FAILED_LOGIN_KEY_PREFIX}:{email.lower()}"
     count = await redis.get(key)
     if count:
