@@ -14,7 +14,7 @@ from pytune_auth_common.services.key_management_service import KeyManagementServ
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
 from simple_logger.logger import SimpleLogger, get_logger
 
-logger = get_logger("auth_common")
+logger:SimpleLogger = get_logger("auth_common")
 
 if config is None:
     config = SimpleConfig()
@@ -164,7 +164,6 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
 
 
     if platform == "web":
-        print(" → Setting access_token in cookie")
         response.set_cookie(
             key="access_token",
             value=access_token,
@@ -175,7 +174,6 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
             samesite=samesite_policy,
         )
         if both_tokens:
-            print(" → Setting refresh_token in cookie")
             response.set_cookie(
                 key="refresh_token",
                 value=refresh_token,
@@ -186,15 +184,11 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
                 samesite=samesite_policy,
             )
         response.headers["Access-Control-Allow-Credentials"] = "true"
-        print(" → Access-Control-Allow-Credentials set to true")
 
     if force_bearer or platform != "web":
-        print(" → Returning bearer tokens in headers")
         response.headers["Authorization"] = f"Bearer {access_token}"
         if refresh_token:
             response.headers["X-Refresh-Token"] = refresh_token
-
-    print(" ✅ Tokens processed successfully\n")
     return {"message": "Tokens processed successfully"}
 
 def raise_revoked_user_error(username: str):

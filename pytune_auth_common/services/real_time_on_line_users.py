@@ -1,159 +1,107 @@
-# Fonction pour ajouter un utilisateur en ligne dans Redis et PostgreSQL
 import asyncio
 from datetime import datetime
 from typing import Dict, Optional
 from redis import RedisError
-from pytune_configuration.redis_config import get_redis_client
+
+from pytune_configuration.redis_config import get_redis_client, init_redis
 from pytune_auth_common.utils.user_agent import platforms
 from pytune_data.crud import update_user_last_connection
 from pytune_data.models import User
 from pytune_data.db import init as db_init
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
+from simple_logger.logger import SimpleLogger, get_logger
 
+logger: SimpleLogger = get_logger("auth_common")
 
 if config is None:
     config = SimpleConfig()
 
-async def add_user_online(user_id: int, platform: str):
-    redis_client = await get_redis_client()
+def redis_retry(fn):
+    async def wrapper(*args, **kwargs):
+        try:
+            redis = await get_redis_client()
+            return await fn(*args, redis=redis, **kwargs)
+        except RedisError as e:
+            logger.warning(f"[Redis] ⚠️ Retry after error: {e}")
+            redis = await init_redis(config.REDIS_URL)
+            return await fn(*args, redis=redis, **kwargs)
+    return wrapper
+
+@redis_retry
+async def add_user_online(user_id: int, platform: str, redis):
     key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
-    
-    # Ajouter à Redis
-    await redis_client.sadd(key, user_id)
-    await redis_client.expire(key, config.USER_ONLINE_TTL)
+    await redis.sadd(key, user_id)
+    await redis.expire(key, config.USER_ONLINE_TTL)
 
-# Fonction pour retirer un utilisateur en ligne de Redis et PostgreSQL
-async def remove_user_online(user_id: int, platform: str):
-    redis_client = await get_redis_client()
+@redis_retry
+async def remove_user_online(user_id: int, platform: str, redis):
     key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
+    await redis.srem(key, user_id)
 
-    # Retirer de Redis
-    await redis_client.srem(key, user_id)
-
-async def reset_online_users(platform: Optional[str] = 'all') -> dict[str, list[Dict]]:
-    """
-    Réinitialiser la liste des utilisateurs en ligne dans Redis et PostgreSQL.
-    Retourne la liste des utilisateurs retirés avec leurs détails (ID, email, prénom, nom).
-
-    :param platform: La plateforme à réinitialiser ('web', 'ios', 'android', 'macos', 'windows', 'linux' ou 'all').
-    :return: Un dictionnaire avec les plateformes et les utilisateurs retirés pour chacune.
-    """
-    removed_users = await get_online_users(platform)
-    redis_client = await get_redis_client()
-    try:
-        if platform == 'all':
-            # Supprimer les utilisateurs dans Redis pour toutes les plateformes
-            for platform in platforms:
-                key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
-                await redis_client.delete(key)
-            print("All online users cleared from Redis.")
-
-        else:
-            # Supprimer les utilisateurs dans Redis pour une plateforme spécifique
-            if platform in platforms:
-                key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
-                await redis_client.delete(key)
-                print(f"Online users for platform '{platform}' cleared from Redis.")
-            else:
-                raise ValueError(f"Invalid platform: {platform}. Available platforms: {', '.join(platforms)}")
-
-    except RedisError as e:
-        print(f"Redis Error: {e}")
-        raise
-
-    return removed_users
-
-# Fonction pour vérifier si un utilisateur est en ligne en vérifiant Redis et PostgreSQL
-async def is_user_online(user_id: int, platform: str) -> bool:
-    redis_client = await get_redis_client()
-    key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
-    # Vérifier dans Redis
-    in_redis = await redis_client.sismember(key, user_id)
-    if in_redis:
-        return True
-
-async def add_user_online(user_id: int, platform: str):
-    redis_client = await get_redis_client()
-    key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
-    
-    # Ajouter à Redis
-    await redis_client.sadd(key, user_id)
-    await redis_client.expire(key, config.USER_ONLINE_TTL)
-
-# Fonction pour récupérer la liste des utilisateurs en ligne pour une plateforme donnée
-async def get_online_users(platform: str = 'all') -> dict[str, list[dict]]:
-    """
-    Récupère la liste des utilisateurs en ligne avec leurs détails (ID, email, prénom, nom)
-    pour une plateforme donnée ou toutes les plateformes.
-    
-    :param platform: La plateforme pour laquelle récupérer les utilisateurs en ligne ('web', 'ios', 'android', etc. ou 'all').
-    :return: Un dictionnaire avec les plateformes et les utilisateurs en ligne pour chacune.
-    """
-    redis_client = await get_redis_client()
-    online_users = {}
-
-    if platform == 'all':
-        for platform in platforms:
-            key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
-            
-            # Récupérer les IDs des utilisateurs en ligne depuis Redis
-            user_ids = await redis_client.smembers(key)
-            user_ids = [int(user_id) for user_id in user_ids]
-            
-            # Récupérer les détails des utilisateurs depuis la base de données
-            if user_ids:
-                users_details = await User.filter(id__in=user_ids).values("id", "email", "first_name", "last_name")
-                online_users[platform] = users_details
-            else:
-                online_users[platform] = []
-    else:
-        # Récupérer les utilisateurs pour une plateforme spécifique
-        if platform in platforms:
-            key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
-            
-            # Récupérer les IDs des utilisateurs en ligne depuis Redis
-            user_ids = await redis_client.smembers(key)
-            user_ids = [int(user_id) for user_id in user_ids]
-            
-            # Récupérer les détails des utilisateurs depuis la base de données
-            if user_ids:
-                users_details = await User.filter(id__in=user_ids).values("id", "email", "first_name", "last_name")
-                online_users[platform] = users_details
-            else:
-                online_users[platform] = []
-        else:
-            raise ValueError(f"Invalid platform: {platform}. Available platforms: {', '.join(platforms)}")
-
-    return online_users
-
-async def get_online_users_count_for_platform(platform: str='all') -> int:
-    redis_client = await get_redis_client()
-    if platform=='all':
-        total_count = 0
-        for platform in platforms:
-            key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
-            count = await redis_client.scard(key)
-            total_count += count
-
-        return total_count
-
-    key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
-    count = await redis_client.scard(key)
-    return count
-
-# Mettre à jour la dernière activité de l'utilisateur dans Redis
-async def update_last_activity(user_id: int):
-    redis_client = await get_redis_client()
+@redis_retry
+async def update_last_activity(user_id: int, redis):
     current_time = datetime.now()
-    await redis_client.set(f"{config.REDIS_USER_LAST_ACTIVITY}{user_id}", current_time.timestamp())
+    await redis.set(f"{config.REDIS_USER_LAST_ACTIVITY}{user_id}", current_time.timestamp())
 
-# Récupérer la dernière activité de l'utilisateur
-async def get_last_activity(user_id: int) -> Optional[datetime]:
-    redis_client = await get_redis_client()
-    last_activity = await redis_client.get(f"{config.REDIS_USER_LAST_ACTIVITY}{user_id}")
+@redis_retry
+async def get_last_activity(user_id: int, redis) -> Optional[datetime]:
+    last_activity = await redis.get(f"{config.REDIS_USER_LAST_ACTIVITY}{user_id}")
     if last_activity:
         return datetime.fromtimestamp(float(last_activity))
     return None
+
+@redis_retry
+async def get_online_users_count_for_platform(platform: str = 'all', redis=None) -> int:
+    if platform == 'all':
+        total_count = 0
+        for plat in platforms:
+            key = f"{config.REDIS_ON_LINE_USERS}:{plat}"
+            count = await redis.scard(key)
+            total_count += count
+        return total_count
+
+    key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
+    return await redis.scard(key)
+
+@redis_retry
+async def reset_online_users(platform: Optional[str] = 'all', redis=None) -> dict[str, list[Dict]]:
+    removed_users = await get_online_users(platform)
+
+    if platform == 'all':
+        for plat in platforms:
+            key = f"{config.REDIS_ON_LINE_USERS}:{plat}"
+            await redis.delete(key)
+        logger.warning("All online users cleared from Redis.")
+    else:
+        if platform in platforms:
+            key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
+            await redis.delete(key)
+            logger.warning(f"Online users for platform '{platform}' cleared from Redis.")
+        else:
+            raise ValueError(f"Invalid platform: {platform}. Available: {', '.join(platforms)}")
+
+    return removed_users
+
+@redis_retry
+async def get_online_users(platform: str = 'all', redis=None) -> dict[str, list[dict]]:
+    online_users = {}
+    targets = platforms if platform == 'all' else [platform]
+
+    for plat in targets:
+        if plat not in platforms:
+            raise ValueError(f"Invalid platform: {plat}. Available: {', '.join(platforms)}")
+
+        key = f"{config.REDIS_ON_LINE_USERS}:{plat}"
+        user_ids = await redis.smembers(key)
+        user_ids = [int(uid) for uid in user_ids]
+
+        if user_ids:
+            users_details = await User.filter(id__in=user_ids).values("id", "email", "first_name", "last_name")
+            online_users[plat] = users_details
+        else:
+            online_users[plat] = []
+
+    return online_users
 
 async def update_last_connection(user_id):
     await update_user_last_connection(user_id)

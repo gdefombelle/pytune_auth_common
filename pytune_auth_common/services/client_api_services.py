@@ -6,7 +6,10 @@ from pytune_data.models import ClientAPI
 from pytune_data.db import init as init_db
 from datetime import datetime
 
+from simple_logger.logger import SimpleLogger, get_logger
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+logger : SimpleLogger = get_logger("auth_common")
 
 async def create_client_api(
     client_id: str,
@@ -66,7 +69,7 @@ async def create_client_api(
             valid_until=valid_until
         )
     except Exception as e:
-        print(f"Error during creation: {e}")
+        logger.error(f"Error during creation: {e}")
         raise
 
     return client_api
