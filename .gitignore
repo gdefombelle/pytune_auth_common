@@ -1,0 +1,43 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+*.manifest
+*.spec
+
+# --- Poetry / Virtualenv ---
+# Virtualenv local dans le package
+.pvenv/
+.venv/
+.env
+venv/
+poetry.lock
+
+# --- Tests / Coverage ---
+htmlcov/
+.tox/
+.coverage
+coverage.xml
+.pytest_cache/
+
+# --- IDE / OS ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Logs / Temp ---
+*.log
+*.tmp
+*.bak
+
+# --- Build / Dist ---
+dist/
+build/
+site/
+docs/_build/
