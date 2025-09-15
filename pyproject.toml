@@ -7,9 +7,9 @@ license = "MIT"
 readme = "README.md"
 packages = [{ include = "pytune_auth_common" }]
 
-
 [tool.poetry.dependencies]
 python = ">=3.12,<3.13"
+
 fastapi = "*"
 python-jose = "*"
 redis = "*"
@@ -19,27 +19,25 @@ python-dotenv = "*"
 starlette = "*"
 tortoise-orm = "*"
 requests = "*"
-
 typing = "*"
 aiohttp = "*"
 colorama = "*"
+passlib = "^1.7.4"
 
 # Dépendances internes
 # --- DEV mode (local) ---
 pytune_data = { path = "../../packages/pytune_data" }
 simple_logger = { path = "../../packages/simple_logger" }
-pytune_configuration = { path = "../../packages/pytune_configuration"}
-pytune_helpers = { path ="../../packages/pytune_helpers"}
+pytune_configuration = { path = "../../packages/pytune_configuration" }
+
 
 # PROD mode:
 # simple_logger = { git = "https://github.com/gdefombelle/simple_logger.git" }
-# pytune_helpers = { git = "https://github.com/gdefombelle/pytune_helpers.git" }
-# pytune_configuration = { git = "https://github.com/gdefombelle/pytune_configuration"}
-# pytune_data = { git = "https://github.com/gdefombelle/pytune_data.git" }
+# pytune_helpers = { git = "https://github.com/gdefombelle/pytune_helpers" }
+# pytune_configuration = { git = "https://github.com/gdefombelle/pytune_configuration" }
+# pytune_data = { git = "https://github.com/gdefombelle/pytune_data" }
 
-passlib = "^1.7.4"
-
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^7.0"
 black = "^23.0"
 mypy = "^1.0"
