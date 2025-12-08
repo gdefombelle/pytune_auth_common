@@ -67,10 +67,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return Response("Internal Server Error (rate limit)", status_code=500)
 
     @redis_retry
-    async def _handle_rate_limit(self, client_ip: str, call_next, request: Request, redis):
+    async def _handle_rate_limit(self, client_ip: str, call_next, request: Request):
+        redis = await get_redis_client()
         is_blocked = await redis.get(f"blocked_{client_ip}")
         if is_blocked:
-            await logger.warning(f"⛔ IP bloquée: {client_ip} tente encore.")
+            await logger.awarning(f"⛔ IP bloquée: {client_ip} tente encore.")
             return Response("Too many requests, you are temporarily blocked.", status_code=429)
 
         async with self.config._lock:
@@ -80,7 +81,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
             if requests > self.config.rate_limit:
                 await redis.set(f"blocked_{client_ip}", "1", ex=self.config.block_time)
-                await logger.warning(f"🚫 IP {client_ip} bloquée (trop de requêtes)")
+                await logger.awarning(f"🚫 IP {client_ip} bloquée (trop de requêtes)")
                 return Response("Too many requests, you are temporarily blocked.", status_code=429)
 
         return await call_next(request)

@@ -1,46 +1,36 @@
 [project]
 name = "pytune_auth_common"
-version = "1.3.3"  # tu peux aussi mettre 0.0.0 si tu veux, uv s'en fiche.
+version = "1.3.3"
 description = "Module commun pour la gestion d'authentification et de ratelimit dans PyTune"
 requires-python = ">=3.12,<3.13"
 
-[tool.poetry]
-name = "pytune_auth_common"
-version = "1.3.3"
-description = "Module commun pour la gestion d'authentification et de ratelimit dans PyTune"
-authors = ["gabriel de fombelle <gabriel.de.fombelle@gmail.com>"]
-license = "MIT"
-readme = "README.md"
-packages = [{ include = "pytune_auth_common" }]
+dependencies = [
+    "fastapi",
+    "python-jose",
+    "redis",
+    "pydantic",
+    "cryptography",
+    "python-dotenv",
+    "starlette",
+    "tortoise-orm",
+    "requests",
+    "typing-extensions",
+    "aiohttp",
+    "colorama",
+    "passlib>=1.7.4",
+    "argon2-cffi>=23.1.0",
+    "google-auth>=2.34.0",
+    "google-auth-oauthlib>=1.2.0",
 
-[tool.poetry.dependencies]
-python = ">=3.12,<3.13"
-
-fastapi = "*"
-python-jose = "*"
-redis = "*"
-pydantic = "*"
-cryptography = "*"
-python-dotenv = "*"
-starlette = "*"
-tortoise-orm = "*"
-requests = "*"
-typing = "*"
-aiohttp = "*"
-colorama = "*"
-passlib = "^1.7.4"
-
-# Dépendances internes DEV + PROD
-pytune_configuration = { git = "https://github.com/gdefombelle/pytune_configuration.git", branch = "main"}
-simple_logger = { git = "https://github.com/gdefombelle/simple_logger.git", branch = "main"}
-pytune_data = { git  = "https://github.com/gdefombelle/pytune_data.git", branch = "main"}
-
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.0"
-black = "^23.0"
-mypy = "^1.0"
+    # dépendances internes
+    "pytune_configuration",
+    "simple_logger",
+    "pytune_data",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pytune_auth_common"]

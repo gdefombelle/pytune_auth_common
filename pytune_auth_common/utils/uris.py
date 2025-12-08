@@ -1,5 +1,9 @@
+from typing import Optional
 from fastapi import Request
 from urllib.parse import urlparse, urlunparse
+from pytune_configuration.sync_config_singleton import config, SimpleConfig
+
+config = config or SimpleConfig()
 
 # Fonction pour normaliser l'URI en ignorant les ports par défaut
 def normalize_uri_ignore_port(uri):
@@ -33,3 +37,43 @@ def get_base_url(request: Request, redirect_uri: str = None) -> str:
     if (protocol == "https" and port == 443) or (protocol == "http" and port == 80):
         return f"{protocol}://{host}"
     return f"{protocol}://{host}:{port}"
+
+def get_public_base_url(request: Optional[Request] = None) -> str:
+    """
+    URL publique “front-facing” pour les liens envoyés par email, etc.
+
+    Priorité :
+    1. config.PUBLIC_BASE_URL (ex: https://pytune.com)
+    2. fallback sur get_base_url(request) si dispo
+    """
+    public = getattr(config, "PUBLIC_BASE_URL", None)
+    if public:
+        return public.rstrip("/")
+
+    if request is not None:
+        return get_base_url(request)
+
+    # Fallback ultime (dev sans request) – tu peux lever une exception si tu préfères
+    return ""
+
+from typing import Optional  # si pas déjà importé
+
+# ...
+
+def get_public_oauth_base_url(request: Optional[Request] = None) -> str:
+    """
+    Retourne l'URL publique de l'API OAuth, utilisée dans les liens envoyés par email.
+
+    Priorité :
+    1. config.PUBLIC_OAUTH_BASE_URL (ex: https://oauth.pytune.com)
+    2. config.PUBLIC_BASE_URL (fallback éventuel)
+    3. get_base_url(request) (fallback ultime)
+    """
+    public = getattr(config, "PUBLIC_OAUTH_BASE_URL", None) or getattr(config, "PUBLIC_BASE_URL", None)
+    if public:
+        return public.rstrip("/")
+
+    if request is not None:
+        return get_base_url(request)
+
+    return ""

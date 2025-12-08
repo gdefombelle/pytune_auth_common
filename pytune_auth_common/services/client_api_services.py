@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from typing import List, Optional
 from passlib.context import CryptContext
 import json
 from fastapi import HTTPException, status
@@ -8,19 +9,23 @@ from datetime import datetime
 
 from simple_logger.logger import SimpleLogger, get_logger
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["argon2", "bcrypt"],
+    default="argon2",
+    deprecated="auto",
+)
 logger : SimpleLogger = get_logger("auth_common")
 
 async def create_client_api(
     client_id: str,
     client_secret: str,
     client_name: str,
-    redirect_uris: list = None,
+    redirect_uris: Optional[List[str]] = None,
     client_type: str = "confidential",
     scope: str = "read write",
     grant_types: str = "authorization_code",
     token_endpoint_auth_method: str = "client_secret_basic",
-    contact_email: str = None,
+    contact_email: str = "",
     valid_days: int = 30
 ) -> ClientAPI:
     """

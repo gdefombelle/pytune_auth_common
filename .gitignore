@@ -1,43 +1,61 @@
-# --- Python ---
+# -------------------------
+# PYTHON CACHE / BUILD
+# -------------------------
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 *.so
-*.egg-info/
-*.egg
+*.abi3.so
 *.manifest
 *.spec
 
-# --- Poetry / Virtualenv ---
-# Virtualenv local dans le package
-.pvenv/
-.venv/
-.env
-venv/
-poetry.lock
+# Egg / Packaging
+*.egg-info/
+*.egg
+dist/
+build/
 
-# --- Tests / Coverage ---
+# -------------------------
+# VIRTUAL ENVS / UV / POETRY
+# -------------------------
+.venv/
+venv/
+.env
+.pvenv/
+poetry.lock
+uv.lock
+
+# -------------------------
+# TEST / COVERAGE
+# -------------------------
+.pytest_cache/
+coverage.xml
 htmlcov/
 .tox/
-.coverage
-coverage.xml
-.pytest_cache/
+.coverage*
 
-# --- IDE / OS ---
+# -------------------------
+# IDE / EDITOR
+# -------------------------
 .vscode/
 .idea/
 *.swp
+
+# OS
 .DS_Store
 Thumbs.db
 
-# --- Logs / Temp ---
+# -------------------------
+# LOGS / TEMP
+# -------------------------
 *.log
 *.tmp
 *.bak
 
-# --- Build / Dist ---
-dist/
-build/
-site/
-docs/_build/
+# -------------------------
+# NODE / FRONTEND
+# -------------------------
+node_modules/
+.svelte-kit/
+vite.config.ts.timestamp-*

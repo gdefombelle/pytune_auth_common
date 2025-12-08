@@ -6,6 +6,7 @@ import random
 from typing import Dict, Optional
 from fastapi import HTTPException, Request, Response, status
 from pytune_configuration.redis_config import get_redis_client
+from typing import cast
 from pytune_auth_common.models.schema import UserOut
 from pytune_data.models import User
 from pytune_data.crud import get_user_by_email
@@ -13,6 +14,7 @@ from pytune_data.db import init as init_db
 from pytune_auth_common.services.key_management_service import KeyManagementService
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
 from simple_logger.logger import SimpleLogger, get_logger
+
 
 logger:SimpleLogger = get_logger("auth_common")
 
@@ -64,25 +66,26 @@ async def remove_user_token(user_email: str):
 
 async def revoke_token(token: str):
     redis_client = await get_redis_client()
-    await redis_client.sadd(config.TOKEN_BLACKLIST_KEY, token)
+    key: str = config.TOKEN_BLACKLIST_KEY   
+    await redis_client.sadd(key,token)
 
 
 def should_check_db() -> bool:
     return random.random() < config.DB_PROBABILITY_QUERY_THRESHOLD
 
 
-async def get_user_from_db_or_token(payload: dict, force_db = False) -> UserOut:
+async def get_user_from_db_or_token(payload: dict, force_db = False) -> Optional[UserOut]:
     """
     Retrieves the user from the database if necessary, 
     or uses the JWT (cookie) data otherwise.
     """
     if force_db or should_check_db():
         await init_db()
-        user = await get_user_by_email(payload.get("sub"))
+        user = await get_user_by_email(payload.get("sub")) # type: ignore
         if user:
             return UserOut(
                 id=user.id,
-                username=user.username,
+                last_name=user.last_name,
                 email=user.email,
                 first_name=user.first_name,
                 user_type=user.user_type,
@@ -107,7 +110,9 @@ async def get_user_from_db_or_token(payload: dict, force_db = False) -> UserOut:
     
 async def is_token_revoked(token: str) -> bool:
     redis_client = await get_redis_client()
-    return await redis_client.sismember(config.REDIS_TOKEN_BLACKLIST_KEY, token)
+    print(">>> REDIS TYPE:", type(redis_client))
+    key: str = config.REDIS_USER_TOKEN_STORAGE
+    return await redis_client.sismember(key, token) # type: ignore
 
 
 async def store_user_token(user_email: str, token: str):
@@ -150,10 +155,11 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
   
    
     both_tokens: bool = bool(refresh_token)
-    is_local = request.url.hostname in ["127.0.0.1", "localhost"] or request.url.hostname.startswith("192.168.")
-    domain = None if is_local else get_root_domain(request.url.hostname)
+    hostname = request.url.hostname or ""
+    is_local = request.url.hostname in ["127.0.0.1", "localhost"] or hostname.startswith("192.168.")
+    domain = None if is_local else get_root_domain(hostname)
     secure_cookie = request.url.scheme == "https" or config.FORCE_SECURE_COOKIE
-    samesite_policy = "None" if domain else "Lax"
+    samesite_policy = "none" if domain else "lax"
     force_bearer = config.INCLUDE_BEARER_TOKENS_FOR_WEB
     logger.info(
         "token_service.respond_with_tokens | "

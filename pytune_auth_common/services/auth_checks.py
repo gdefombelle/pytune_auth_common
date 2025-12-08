@@ -19,12 +19,17 @@ from pytune_auth_common.utils.user_agent import get_platform_from_user_agent
 from simple_logger.logger import get_logger, SimpleLogger 
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
 
+
 if config is None:
     config = SimpleConfig()
 
 key_service = KeyManagementService()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["argon2", "bcrypt"],
+    default="argon2",
+    deprecated="auto"
+)
 
 logger :SimpleLogger = get_logger("auth_common") 
 logger.info("🎉 Logger pytune_auth_ok initialisé: pytune_auth_common")
@@ -59,7 +64,7 @@ async def handle_user_validation(payload: dict, response: Response, request: Req
 
     if user.status == UserStatusEnum.PENDING:
         await logger.acritical(
-            f"{user.email} with unconfirmed email attempted to connect", user
+            f"{user.email} with unconfirmed email attempted to connect user"
         )
         raise_email_not_confirmed(user.email)
 
@@ -82,11 +87,11 @@ async def handle_expired_access_token(refresh_token: str, response: Response, re
         )
         user = await get_user_from_db_or_token(refresh_payload, force_db=True)
         if not user:
-            await remove_user_token(refresh_payload.get("sub"))
+            await remove_user_token(refresh_payload.get("sub")) # type: ignore
             delete_tokens_from_response(response, request)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"User {refresh_payload.get('sub')} was removed"
+                detail=f"User {refresh_payload.get('sub')} was removed" 
             )
 
         # Generate new tokens and update response
@@ -102,7 +107,7 @@ async def handle_expired_access_token(refresh_token: str, response: Response, re
         )
 
         platform = get_platform_from_user_agent(request.headers.get("User-Agent", ""))
-        respond_with_tokens(response, request, platform, new_access_token, new_refresh_token)
+        respond_with_tokens(response, request, platform, new_access_token, new_refresh_token) # type: ignore
 
         await add_user_online(user.id, platform)
         await update_last_activity(user.id)

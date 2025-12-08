@@ -41,31 +41,67 @@ class KeyManagementService:
         try:
             with self._connect() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("SELECT private_key, public_key, passphrase FROM rsa_keys WHERE key_name = 'current_access'")
+
+                    # --- CURRENT ACCESS ---
+                    cur.execute("""
+                        SELECT private_key, public_key, passphrase
+                        FROM rsa_keys
+                        WHERE key_name = 'current_access'
+                    """)
                     access = cur.fetchone()
-                    cur.execute("SELECT private_key, public_key, passphrase FROM rsa_keys WHERE key_name = 'current_refresh'")
+                    if access is None:
+                        raise RuntimeError("Missing RSA key: current_access")
+
+                    private_access, public_access, pass_access = access
+
+                    # --- CURRENT REFRESH ---
+                    cur.execute("""
+                        SELECT private_key, public_key, passphrase
+                        FROM rsa_keys
+                        WHERE key_name = 'current_refresh'
+                    """)
                     refresh = cur.fetchone()
-                    cur.execute("SELECT public_key FROM rsa_keys WHERE key_name = 'old_access'")
+                    if refresh is None:
+                        raise RuntimeError("Missing RSA key: current_refresh")
+
+                    private_refresh, public_refresh, pass_refresh = refresh
+
+                    # --- OLD ACCESS ---
+                    cur.execute("""
+                        SELECT public_key
+                        FROM rsa_keys
+                        WHERE key_name = 'old_access'
+                    """)
                     old_access = cur.fetchone()
-                    cur.execute("SELECT public_key FROM rsa_keys WHERE key_name = 'old_refresh'")
+                    old_access_key = old_access[0] if old_access else None
+
+                    # --- OLD REFRESH ---
+                    cur.execute("""
+                        SELECT public_key
+                        FROM rsa_keys
+                        WHERE key_name = 'old_refresh'
+                    """)
                     old_refresh = cur.fetchone()
+                    old_refresh_key = old_refresh[0] if old_refresh else None
 
-                    self.PRIVATE_ACCESS_KEY = access[0]
-                    self.PUBLIC_ACCESS_KEY = access[1]
-                    self.PASS_PHRASE_ACCESS_KEY = access[2]
+                    # --- ASSIGN ---
+                    self.PRIVATE_ACCESS_KEY = private_access
+                    self.PUBLIC_ACCESS_KEY = public_access
+                    self.PASS_PHRASE_ACCESS_KEY = pass_access
 
-                    self.PRIVATE_REFRESH_KEY = refresh[0]
-                    self.PUBLIC_REFRESH_KEY = refresh[1]
-                    self.PASS_PHRASE_REFRESH_KEY = refresh[2]
+                    self.PRIVATE_REFRESH_KEY = private_refresh
+                    self.PUBLIC_REFRESH_KEY = public_refresh
+                    self.PASS_PHRASE_REFRESH_KEY = pass_refresh
 
-                    self.PUBLIC_ACCESS_KEY_OLD = old_access[0]
-                    self.PUBLIC_REFRESH_KEY_OLD = old_refresh[0]
+                    self.PUBLIC_ACCESS_KEY_OLD = old_access_key
+                    self.PUBLIC_REFRESH_KEY_OLD = old_refresh_key
 
             logger.info("✅ RSA keys successfully loaded from database.")
+
         except Exception as e:
             logger.critical(f"❌ Failed to load RSA keys: {e}")
-            raise RuntimeError("Could not initialize RSA keys.")
-
+            raise RuntimeError("Could not initialize RSA keys.") from e
+    
     def _generate_passphrase(self, length=32) -> str:
         return ''.join(secrets.choice(string.ascii_letters + string.digits + string.punctuation) for _ in range(length))
 
