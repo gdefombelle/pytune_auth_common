@@ -19,26 +19,24 @@ if config is None:
 def redis_retry(fn):
     async def wrapper(*args, **kwargs):
         try:
-            redis = await get_redis_client()
+            await get_redis_client()
             return await fn(*args, **kwargs)
         except RedisError as e:
             logger.warning(f"[Redis] ⚠️ Retry after error: {e}")
             redis = await init_redis(config.REDIS_URL)
-            return await fn(*args, redis=redis, **kwargs)
+            return await fn(*args, **kwargs)
     return wrapper
 
 @redis_retry
-async def add_user_online(user_id: int, platform: str, redis: Optional[Redis] = None):
-    if redis is None:
-        redis = await get_redis_client()
+async def add_user_online(user_id: int, platform: str):
+    redis = await get_redis_client()
     key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
     await redis.sadd(key, user_id) # type: ignore
     await redis.expire(key, config.USER_ONLINE_TTL)
 
 @redis_retry
-async def remove_user_online(user_id: int, platform: str, redis: Optional[Redis] = None):
-    if redis is None:
-        redis = await get_redis_client()
+async def remove_user_online(user_id: int, platform: str):
+    redis = await get_redis_client()
     key = f"{config.REDIS_ON_LINE_USERS}:{platform}"
     await redis.srem(key, user_id) # type: ignore
 

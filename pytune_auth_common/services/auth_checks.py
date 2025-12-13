@@ -135,7 +135,7 @@ async def handle_active_user(payload: dict, response: Response, request: Request
     """
     user = await get_user_from_db_or_token(payload, force_db=config.FORCE_RETRIEVING_USER_FROM_DB)
     if not user:
-        await remove_user_token(payload.get("sub"))
+        await remove_user_token(payload.get("sub")) # type: ignore
         delete_tokens_from_response(response, request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

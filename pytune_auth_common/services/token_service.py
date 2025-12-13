@@ -5,7 +5,6 @@ from datetime import datetime, timedelta, timezone
 import random
 from typing import Dict, Optional
 from fastapi import HTTPException, Request, Response, status
-from pytune_configuration.redis_config import get_redis_client
 from typing import cast
 from pytune_auth_common.models.schema import UserOut
 from pytune_data.models import User
@@ -14,6 +13,8 @@ from pytune_data.db import init as init_db
 from pytune_auth_common.services.key_management_service import KeyManagementService
 from pytune_configuration.sync_config_singleton import config, SimpleConfig
 from simple_logger.logger import SimpleLogger, get_logger
+from redis import RedisError
+from pytune_configuration.redis_config import get_redis_client, init_redis
 
 
 logger:SimpleLogger = get_logger("auth_common")
@@ -21,6 +22,18 @@ logger:SimpleLogger = get_logger("auth_common")
 if config is None:
     config = SimpleConfig()
 key_service = KeyManagementService()
+
+def redis_retry(fn):
+    async def wrapper(*args, **kwargs):
+        try:
+            return await fn(*args, **kwargs)
+        except RedisError as e:
+            logger.warning(f"[Redis/token_service] ⚠️ Retry after error: {e}")
+            # On tente de réinitialiser la connexion globale
+            await init_redis(config.REDIS_URL)
+            return await fn(*args, **kwargs)
+    return wrapper
+
 def token_user_data(user: UserOut):
     return {
         "sub": user.email,
@@ -56,18 +69,21 @@ def generate_token(data: dict, expires_delta: Optional[timedelta] = None, token_
     elif token_type == "reset_password":
         return key_service.sign_jwt(to_encode, key_type="reset_password")
 
+@redis_retry
 async def get_user_token(user_email: str) -> Optional[str]:
     redis_client = await get_redis_client()
     return await redis_client.get(f"{config.REDIS_USER_TOKEN_STORAGE}{user_email}")
 
+@redis_retry
+async def is_token_revoked(token: str) -> bool:
+    redis_client = await get_redis_client()
+    key: str = config.REDIS_TOKEN_BLACKLIST_KEY
+    return bool(await redis_client.sismember(key, token))  # type: ignore
+
+@redis_retry
 async def remove_user_token(user_email: str):
     redis_client = await get_redis_client()
     await redis_client.delete(f"{config.REDIS_USER_TOKEN_STORAGE}{user_email}")
-
-async def revoke_token(token: str):
-    redis_client = await get_redis_client()
-    key: str = config.TOKEN_BLACKLIST_KEY   
-    await redis_client.sadd(key,token)
 
 
 def should_check_db() -> bool:
@@ -97,28 +113,40 @@ async def get_user_from_db_or_token(payload: dict, force_db = False) -> Optional
             return None
     else:
         # Return the token information directly
+        sub = str(payload.get("sub") or "")
+        first_name = str(payload.get("first_name") or "")
+        user_type = payload.get("user_type") or ""
+        status = payload.get("status") or ""
+        client_status = payload.get("client_status") or ""
+        oauth_provider = payload.get("oauth_provider")
+
         return UserOut(
-            id=payload.get("id"),
-            username=payload.get("sub"),
-            email=payload.get("sub"),
-            first_name=payload.get("first_name"),
-            user_type=payload.get("user_type"),
-            status=payload.get("status"),
-            client_status=payload.get("client_status"),
-            oauth_provider=payload.get("oauth_provider")
+            id=payload.get("id"), # type: ignore
+            email=sub,
+            first_name=first_name,
+            user_type=user_type, # type: ignore
+            status=status, # type: ignore
+            client_status=client_status, # type: ignore
+            oauth_provider=oauth_provider,
         )
-    
-async def is_token_revoked(token: str) -> bool:
+            
+@redis_retry
+async def revoke_token(token: str):
     redis_client = await get_redis_client()
-    print(">>> REDIS TYPE:", type(redis_client))
-    key: str = config.REDIS_USER_TOKEN_STORAGE
-    return await redis_client.sismember(key, token) # type: ignore
+    key: str = config.REDIS_TOKEN_BLACKLIST_KEY   
+    await redis_client.sadd(key, token) # type: ignore
 
 
+@redis_retry
 async def store_user_token(user_email: str, token: str):
     redis_client = await get_redis_client()
-    await redis_client.set(f"{config.REDIS_USER_TOKEN_STORAGE}{user_email}", token, ex=config.ACCESS_TOKEN_EXPIRE_MINUTES)
-
+    # si ACCESS_TOKEN_EXPIRE_MINUTES est bien en minutes, je recommande :
+    ttl_seconds = config.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    await redis_client.set(
+        f"{config.REDIS_USER_TOKEN_STORAGE}{user_email}",
+        token,
+        ex=ttl_seconds,
+    )
 def get_root_domain(hostname: str) -> str:
     # Vérifie si le hostname est une adresse IP (ex: 127.0.0.1, 192.168.1.1)
     ip_pattern = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
@@ -150,10 +178,13 @@ def delete_tokens_from_response(response: Response, request: Request):
 
     return {"message": "Cookies have been removed"}
 
-def respond_with_tokens(response: Response, request: Request, platform: str, access_token: str, 
-                        refresh_token: Optional[str] = None):
-  
-   
+def respond_with_tokens(
+    response: Response,
+    request: Request,
+    platform: str,
+    access_token: str,
+    refresh_token: Optional[str] = None,
+) -> None:
     both_tokens: bool = bool(refresh_token)
     hostname = request.url.hostname or ""
     is_local = request.url.hostname in ["127.0.0.1", "localhost"] or hostname.startswith("192.168.")
@@ -161,6 +192,7 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
     secure_cookie = request.url.scheme == "https" or config.FORCE_SECURE_COOKIE
     samesite_policy = "none" if domain else "lax"
     force_bearer = config.INCLUDE_BEARER_TOKENS_FOR_WEB
+
     logger.info(
         "token_service.respond_with_tokens | "
         f"platform={platform} | is_local={is_local} | scheme={request.url.scheme} | "
@@ -168,7 +200,7 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
         f"force_bearer={force_bearer} | both_tokens={both_tokens}"
     )
 
-
+    # Cookies web
     if platform == "web":
         response.set_cookie(
             key="access_token",
@@ -191,12 +223,12 @@ def respond_with_tokens(response: Response, request: Request, platform: str, acc
             )
         response.headers["Access-Control-Allow-Credentials"] = "true"
 
+    # Headers Bearer pour dev web + autres plateformes
     if force_bearer or platform != "web":
         response.headers["Authorization"] = f"Bearer {access_token}"
         if refresh_token:
             response.headers["X-Refresh-Token"] = refresh_token
-    return {"message": "Tokens processed successfully"}
-
+            
 def raise_revoked_user_error(username: str):
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

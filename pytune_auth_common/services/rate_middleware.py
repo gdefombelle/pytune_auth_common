@@ -15,13 +15,20 @@ logger = get_logger("auth_common")
 
 def redis_retry(fn):
     async def wrapper(*args, **kwargs):
+
+        # Supprime les arguments inattendus
+        if "redis" in kwargs:
+            kwargs.pop("redis")
+
         try:
-            redis = await get_redis_client()
-            return await fn(*args, redis=redis, **kwargs)
+            await get_redis_client()
+            return await fn(*args, **kwargs)
+
         except RedisError as e:
             logger.warning(f"[Redis] ⚠️ Retry after error: {e}")
-            redis = await init_redis(_config.REDIS_URL)
-            return await fn(*args, redis=redis, **kwargs)
+            await init_redis(_config.REDIS_URL)
+            return await fn(*args, **kwargs)
+
     return wrapper
 
 class RateLimitConfig:
