@@ -238,7 +238,7 @@ async def get_current_user(
         request.cookies.get("access_token")
         or request.headers.get("Authorization", "").replace("Bearer ", "")
         or request.query_params.get("access_token")
-    )
+    ) # type: ignore
 
     if not access_token:
         raise HTTPException(
