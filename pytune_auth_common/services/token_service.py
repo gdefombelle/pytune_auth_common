@@ -189,7 +189,7 @@ def respond_with_tokens(
     hostname = request.url.hostname or ""
     is_local = request.url.hostname in ["127.0.0.1", "localhost"] or hostname.startswith("192.168.")
     domain = None if is_local else get_root_domain(hostname)
-    secure_cookie = request.url.scheme == "https" or config.FORCE_SECURE_COOKIE
+    secure_cookie = not is_local
     samesite_policy = "none" if domain else "lax"
     force_bearer = config.INCLUDE_BEARER_TOKENS_FOR_WEB
 

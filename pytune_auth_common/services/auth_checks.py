@@ -224,14 +224,8 @@ async def get_current_user(
 
     # Step 0 : Debug hhtponly cookie en prod
     # Diagnostic complet pour debug cookies + headers
-    logger.info(f"[get_current_user] Host={request.headers.get('host')} | Origin={request.headers.get('origin')}")
-    logger.info(f"[get_current_user] Cookie access_token={request.cookies.get('access_token')}")
-    logger.info(f"[get_current_user] Header Authorization={request.headers.get('authorization')}")
-    logger.info(f"[get_current_user] Header X-Refresh-Token={request.headers.get('x-refresh-token')}")
-    logger.info(f"[get_current_user] Query access_token={request.query_params.get('access_token')}")
-    logger.info(f"[get_current_user] Query refresh_token={request.query_params.get('refresh_token')}")
-
-
+    logger.debug(f"Cookies keys: {list(request.cookies.keys())}")
+            
     # Step 1: Retrieve the access token from cookies, headers, or query params
 
     access_token = (
