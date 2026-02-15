@@ -62,11 +62,11 @@ async def handle_user_validation(payload: dict, response: Response, request: Req
         await logger.acritical("Revoked user attempted to connect")
         raise_revoked_user_error(user.email)
 
-    if user.status == UserStatusEnum.PENDING:
-        await logger.acritical(
-            f"{user.email} with unconfirmed email attempted to connect user"
-        )
-        raise_email_not_confirmed(user.email)
+    # if user.status == UserStatusEnum.PENDING:
+    #     await logger.acritical(
+    #         f"{user.email} with unconfirmed email attempted to connect user"
+    #     )
+    #     raise_email_not_confirmed(user.email)
 
     # Update user activity
     platform = get_platform_from_user_agent(request.headers.get("User-Agent", ""))
@@ -147,8 +147,8 @@ async def handle_active_user(payload: dict, response: Response, request: Request
         await logger.acritical(f"Revoked user attempted to connect {user.email}")
         raise_revoked_user_error(user.email)
 
-    if user.status == UserStatusEnum.PENDING:
-        raise_email_not_confirmed(user.email)
+    # if user.status == UserStatusEnum.PENDING:
+    #     raise_email_not_confirmed(user.email)
 
     # Update user activity
     platform = get_platform_from_user_agent(request.headers.get("User-Agent", ""))
